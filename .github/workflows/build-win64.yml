@@ -27,7 +27,8 @@ jobs:
           ./release/build_server.sh
           ./release/build_windows.sh 64
           ./release/package_client.sh win64 zip
+          find release -maxdepth 3
       - uses: actions/upload-artifact@v4
         with:
           name: scrcpy-win64-${{ inputs.version }}
-          path: release/output/scrcpy-win64-*.zip
+          path: release/**/*.zip
