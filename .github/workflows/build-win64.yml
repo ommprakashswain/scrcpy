@@ -1,0 +1,50 @@
+name: Build Win64 Test
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Build tag name'
+        required: true
+        default: 'v5.0.1-pr7127'
+
+jobs:
+  build-server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Build scrcpy-server
+        env:
+          VERSION: ${{ inputs.version }}
+        run: ./release/build_server.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: scrcpy-server
+          path: release/work/build-server/scrcpy-server
+
+  build-win64:
+    needs: build-server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MinGW cross-compiler & tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 meson ninja-build pkg-config cmake nasm zip curl
+      - uses: actions/download-artifact@v4
+        with:
+          name: scrcpy-server
+          path: release/work/build-server
+      - name: Build and package Win64
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          ./release/build_windows.sh 64
+          ./release/package_client.sh win64 zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: scrcpy-win64-${{ inputs.version }}
+          path: release/output/scrcpy-win64-*.zip
